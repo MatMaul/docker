@@ -3953,8 +3953,8 @@ func (s *DockerSuite) TestCmdCannotBeInvoked(c *check.C) {
 func (s *DockerSuite) TestRunNonExistingImage(c *check.C) {
 	runCmd := exec.Command(dockerBinary, "run", "foo")
 	out, exit, err := runCommandWithOutput(runCmd)
-	if !(err != nil && exit == 125 && strings.Contains(out, "Unable to find image")) {
-		c.Fatalf("Run non-existing image should have errored with 'Unable to find image' code 125, but we got out: %s, exit: %d, err: %s", out, exit, err)
+	if !(err != nil && exit == 125 && strings.Contains(out, "No such image")) {
+		c.Fatalf("Run non-existing image should have errored with 'No such image' code 125, but we got out: %s, exit: %d, err: %s", out, exit, err)
 	}
 }
 

@@ -280,7 +280,7 @@ func (s *DockerSuite) TestCreateByImageID(c *check.C) {
 		c.Fatalf("expected non-zero exit code; received %d", exit)
 	}
 
-	if expected := "Unable to find image"; !strings.Contains(out, expected) {
+	if expected := "No such image"; !strings.Contains(out, expected) {
 		c.Fatalf(`Expected %q in output; got: %s`, expected, out)
 	}
 }

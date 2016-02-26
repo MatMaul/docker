@@ -1,6 +1,7 @@
 package container
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -357,12 +358,22 @@ func (s *containerRouter) postContainersCreate(ctx context.Context, w http.Respo
 	version := httputils.VersionFromContext(ctx)
 	adjustCPUShares := version.LessThan("1.19")
 
+	authEncoded := r.Header.Get("X-Registry-Auth")
+	authConfig := &types.AuthConfig{}
+	if authEncoded != "" {
+		authJSON := base64.NewDecoder(base64.URLEncoding, strings.NewReader(authEncoded))
+		if err := json.NewDecoder(authJSON).Decode(authConfig); err != nil {
+			authConfig = &types.AuthConfig{}
+		}
+	}
+
 	ccr, err := s.backend.ContainerCreate(types.ContainerCreateConfig{
 		Name:             name,
 		Config:           config,
 		HostConfig:       hostConfig,
 		NetworkingConfig: networkingConfig,
 		AdjustCPUShares:  adjustCPUShares,
+		AuthConfig:       *authConfig,
 	})
 	if err != nil {
 		return err

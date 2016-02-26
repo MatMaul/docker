@@ -10,11 +10,13 @@ import (
 	"github.com/docker/docker/layer"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/stringid"
+	"github.com/docker/docker/reference"
 	volumestore "github.com/docker/docker/volume/store"
 	"github.com/docker/engine-api/types"
 	containertypes "github.com/docker/engine-api/types/container"
 	networktypes "github.com/docker/engine-api/types/network"
 	"github.com/opencontainers/runc/libcontainer/label"
+	"io/ioutil"
 )
 
 // ContainerCreate creates a container.
@@ -52,6 +54,7 @@ func (daemon *Daemon) ContainerCreate(params types.ContainerCreateConfig) (types
 // Create creates a new container from the given configuration with a given name.
 func (daemon *Daemon) create(params types.ContainerCreateConfig) (retC *container.Container, retErr error) {
 	var (
+
 		container *container.Container
 		img       *image.Image
 		imgID     image.ID
@@ -59,10 +62,19 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig) (retC *containe
 	)
 
 	if params.Config.Image != "" {
+		if params.Config.Pull {
+			ref, err := reference.ParseNamed(params.Config.Image)
+			if err == nil {
+				ref = reference.WithDefaultTag(ref)
+				daemon.PullImage(ref, nil, &params.AuthConfig, ioutil.Discard)
+			}
+		}
+
 		img, err = daemon.GetImage(params.Config.Image)
 		if err != nil {
 			return nil, err
 		}
+
 		imgID = img.ID()
 	}
 

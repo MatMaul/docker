@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/reference"
 	"github.com/docker/docker/registry"
 	runconfigopts "github.com/docker/docker/runconfig/opts"
+	"github.com/docker/docker/pkg/version"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
@@ -109,12 +110,25 @@ func (cli *DockerCli) createContainer(config *container.Config, hostConfig *cont
 		config.Image = trustedRef.String()
 	}
 
-	//create the container
-	response, err := cli.client.ContainerCreate(config, hostConfig, networkingConfig, name)
-
-	//if image not found try to pull it
+	// Resolve the Repository name from fqn to RepositoryInfo
+	repoInfo, err := registry.ParseRepositoryInfo(ref)
 	if err != nil {
-		if client.IsErrImageNotFound(err) {
+		return nil, err
+	}
+
+	authConfig := cli.resolveAuthConfig(repoInfo.Index)
+	encodedAuth, err := encodeAuthToBase64(authConfig)
+	if err != nil {
+		encodedAuth = ""
+	}
+
+	//create the container
+	response, err := cli.client.ContainerCreate(config, hostConfig, networkingConfig, name, encodedAuth)
+
+	// if image not found try to pull it
+	// with API >= 1.23 the pull is done in the server if needed
+	if err != nil {
+		if version.Version(cli.client.ClientVersion()).LessThan("1.23") && client.IsErrImageNotFound(err) {
 			fmt.Fprintf(cli.err, "Unable to find image '%s' locally\n", ref.String())
 
 			// we don't want to write to stdout anything apart from container.ID
@@ -128,7 +142,7 @@ func (cli *DockerCli) createContainer(config *container.Config, hostConfig *cont
 			}
 			// Retry
 			var retryErr error
-			response, retryErr = cli.client.ContainerCreate(config, hostConfig, networkingConfig, name)
+			response, retryErr = cli.client.ContainerCreate(config, hostConfig, networkingConfig, name, encodedAuth)
 			if retryErr != nil {
 				return nil, retryErr
 			}

@@ -236,6 +236,7 @@ Create a container
            ],
            "Entrypoint": "",
            "Image": "ubuntu",
+           "Pull": true,
            "Labels": {
                    "com.example.vendor": "Acme",
                    "com.example.license": "GPL",
@@ -358,6 +359,7 @@ Json Parameters:
 -   **Entrypoint** - Set the entry point for the container as a string or an array
       of strings.
 -   **Image** - A string specifying the image name to use for the container.
+-   **Pull** - Boolean value, if true the image will be pulled before running the container (this WILL update an already pulled image).
 -   **Mounts** - An array of mount points in the container.
 -   **WorkingDir** - A string specifying the working directory for commands to
       run in.
@@ -423,15 +425,39 @@ Json Parameters:
     -   **VolumeDriver** - Driver that this container users to mount volumes.
     -   **ShmSize** - Size of `/dev/shm` in bytes. The size must be greater than 0.  If omitted the system uses 64MB.
 
+When using this endpoint with Pull set to true, the `X-Registry-Auth` header can be used to include a base64-encoded AuthConfig object.
+
 Query Parameters:
 
 -   **name** – Assign the specified name to the container. Must
     match `/?[a-zA-Z0-9_-]+`.
 
+Request Headers:
+
+-   **X-Registry-Auth** – base64-encoded AuthConfig object, containing either login information, or a token
+    - Credential based login:
+
+        ```
+    {
+            "username": "jdoe",
+            "password": "secret",
+            "email": "jdoe@acme.com",
+    }
+        ```
+
+    - Token based login:
+
+        ```
+    {
+            "registrytoken": "9cbaf023786cd7..."
+    }
+        ```
+
+
 Status Codes:
 
 -   **201** – no error
--   **404** – no such container
+-   **404** – no such image
 -   **406** – impossible to attach (container not running)
 -   **500** – server error
 
@@ -1644,7 +1670,7 @@ Query Parameters:
         passing secret values. [Read more about the buildargs instruction](../../reference/builder.md#arg)
 -   **shmsize** - Size of `/dev/shm` in bytes. The size must be greater than 0.  If omitted the system uses 64MB.
 
-    Request Headers:
+Request Headers:
 
 -   **Content-type** – Set to `"application/tar"`.
 -   **X-Registry-Config** – A base64-url-safe-encoded Registry Auth Config JSON
@@ -1712,7 +1738,7 @@ Query Parameters:
         an image.
 -   **tag** – Tag or digest.
 
-    Request Headers:
+Request Headers:
 
 -   **X-Registry-Auth** – base64-encoded AuthConfig object, containing either login information, or a token
     - Credential based login:
